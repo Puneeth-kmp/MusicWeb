@@ -1,15 +1,16 @@
 import os
 import streamlit as st
 
-# Directory to scan for local audio files
-AUDIO_DIRECTORY = "/path/to/local/music"  # Set this to the local directory where songs are stored
-
 # Supported audio file formats
 SUPPORTED_FORMATS = ['.mp3', '.wav', '.ogg']
 
-# Function to get a list of audio files from the local directory
+# Function to get a list of audio files from the provided directory
 def get_local_audio_files(directory):
     audio_files = []
+    if not os.path.exists(directory):
+        st.error(f"The directory {directory} does not exist.")
+        return audio_files
+
     try:
         for root, dirs, files in os.walk(directory):
             for file in files:
@@ -22,14 +23,20 @@ def get_local_audio_files(directory):
 # Streamlit UI logic
 st.title("Local Audio Player")
 
-# List and play local audio files
-audio_files = get_local_audio_files(AUDIO_DIRECTORY)
+# Get the directory path from the user
+directory_path = st.text_input("Enter the directory path to search for audio files", "")
 
-if audio_files:
-    st.write("Available songs:")
-    selected_file = st.selectbox("Select a song to play", audio_files)
+# List and play local audio files if the directory is provided
+if directory_path:
+    audio_files = get_local_audio_files(directory_path)
 
-    if selected_file:
-        st.audio(selected_file)
+    if audio_files:
+        st.write("Available songs:")
+        selected_file = st.selectbox("Select a song to play", audio_files)
+
+        if selected_file:
+            st.audio(selected_file)
+    else:
+        st.warning("No audio files found in the specified directory.")
 else:
-    st.warning("No audio files found in the specified directory.")
+    st.warning("Please enter a directory path.")
