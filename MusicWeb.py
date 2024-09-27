@@ -2,7 +2,7 @@ import os
 import streamlit as st
 from tkinter import Tk, filedialog
 
-# Function to select folder using tkinter
+# Function to open a folder picker dialog using tkinter
 def select_folder():
     root = Tk()
     root.withdraw()  # Hide the main tkinter window
