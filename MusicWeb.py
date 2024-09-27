@@ -1,50 +1,35 @@
-import yt_dlp
 import os
 import streamlit as st
 
-DOWNLOAD_PATH = "./downloads"
+# Directory to scan for local audio files
+AUDIO_DIRECTORY = "/path/to/local/music"  # Set this to the local directory where songs are stored
 
-def download_audio(youtube_url):
+# Supported audio file formats
+SUPPORTED_FORMATS = ['.mp3', '.wav', '.ogg']
+
+# Function to get a list of audio files from the local directory
+def get_local_audio_files(directory):
+    audio_files = []
     try:
-        # Set options for yt-dlp to extract audio
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            'outtmpl': os.path.join(DOWNLOAD_PATH, '%(title)s.%(ext)s'),
-        }
-        audio_file = None
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(youtube_url, download=True)
-            audio_file = ydl.prepare_filename(info_dict)
-            audio_file = audio_file.replace('.webm', '.mp3')  # Adjust extension if necessary
-
-        # Return the file and the video title
-        return audio_file, info_dict.get('title', 'Unknown title')
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                if os.path.splitext(file)[1].lower() in SUPPORTED_FORMATS:
+                    audio_files.append(os.path.join(root, file))
     except Exception as e:
-        st.error(f"Error downloading audio: {str(e)}")
-        return None, None
+        st.error(f"Error reading audio files: {str(e)}")
+    return audio_files
 
 # Streamlit UI logic
-st.title("YouTube Audio Downloader")
+st.title("Local Audio Player")
 
-# Get YouTube URL from the user
-youtube_url = st.text_input("Enter YouTube URL", "")
+# List and play local audio files
+audio_files = get_local_audio_files(AUDIO_DIRECTORY)
 
-# Create a download button
-if st.button("Download Audio"):
-    if youtube_url:
-        # Attempt to download audio
-        audio_file, video_title = download_audio(youtube_url)
+if audio_files:
+    st.write("Available songs:")
+    selected_file = st.selectbox("Select a song to play", audio_files)
 
-        # Check if audio_file is properly assigned
-        if audio_file:
-            st.success(f"Downloaded: {video_title}")
-            st.audio(audio_file)
-        else:
-            st.error("Failed to download audio. Please check the video link.")
-    else:
-        st.error("Please enter a valid YouTube URL.")
+    if selected_file:
+        st.audio(selected_file)
+else:
+    st.warning("No audio files found in the specified directory.")
