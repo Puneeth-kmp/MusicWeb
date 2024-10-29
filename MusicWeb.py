@@ -1,5 +1,6 @@
 import os
 import streamlit as st
+from streamlit.components.v1 import html
 
 # Supported audio file formats
 SUPPORTED_FORMATS = ['.mp3', '.wav', '.ogg']
@@ -23,14 +24,35 @@ def get_local_audio_files(directory):
 # Streamlit UI logic
 st.title("Local Audio Player")
 
-# Text input to enter the directory path
-directory = st.text_input("Enter the directory path")
+# HTML and JavaScript for folder picker
+folder_picker = """
+<input type="file" id="folderPicker" webkitdirectory directory multiple>
+<script>
+    const folderPicker = document.getElementById('folderPicker');
+    folderPicker.addEventListener('change', (event) => {
+        const files = event.target.files;
+        const paths = Array.from(files).map(file => file.webkitRelativePath);
+        const uniquePaths = [...new Set(paths.map(path => path.split('/')[0]))];
+        const selectedFolder = uniquePaths[0];
+        window.parent.postMessage({selectedFolder: selectedFolder}, '*');
+    });
+</script>
+"""
 
-if directory:
-    st.write(f"Selected directory: {directory}")
+# Display folder picker
+html(folder_picker)
+
+# Placeholder for selected directory
+selected_directory = st.empty()
+
+# JavaScript to handle folder selection
+selected_folder = st.experimental_get_query_params().get('selectedFolder', [None])[0]
+
+if selected_folder:
+    selected_directory.write(f"Selected directory: {selected_folder}")
 
     # List and play local audio files from the selected folder
-    audio_files = get_local_audio_files(directory)
+    audio_files = get_local_audio_files(selected_folder)
 
     if audio_files:
         st.write("Available songs:")
@@ -41,4 +63,4 @@ if directory:
     else:
         st.warning("No audio files found in the specified directory.")
 else:
-    st.warning("Please enter a directory path.")
+    st.warning("Please select a directory.")
