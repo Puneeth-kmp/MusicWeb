@@ -2,7 +2,6 @@ import streamlit as st
 import os
 from pathlib import Path
 import time
-import random
 
 # Set page configuration
 st.set_page_config(page_title="Music Player", layout="wide")
@@ -14,7 +13,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Supported audio file formats
 SUPPORTED_FORMATS = ['.mp3', '.wav', '.ogg']
 
-# Custom CSS with enhanced button styling
+# Custom CSS
 st.markdown("""
 <style>
     /* Main container */
@@ -44,66 +43,42 @@ st.markdown("""
         margin: 10px 0 !important;
     }
     
-    /* Controls container */
-    .controls-container {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin: 10px 0;
-    }
-    
-    /* Control buttons */
-    .control-button {
-        background-color: #1DB954;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-    
-    .control-button:hover {
-        background-color: #1ed760;
-    }
-    
-    /* Active state for shuffle/repeat buttons */
-    .control-button.active {
-        background-color: #1ed760;
-        border: 2px solid white;
-    }
-    
-    /* Playlist item */
-    .playlist-item {
+    /* Success message */
+    .success {
         padding: 10px;
-        margin: 5px 0;
-        background-color: #282828;
         border-radius: 5px;
-        cursor: pointer;
+        background-color: rgba(29, 185, 84, 0.1);
+        border: 1px solid #1DB954;
+        color: #1DB954;
     }
     
-    .playlist-item:hover {
-        background-color: #383838;
+    /* Warning message */
+    .stWarning {
+        background-color: rgba(255, 214, 0, 0.1) !important;
+        border: 1px solid #FFD700 !important;
     }
     
-    .playlist-item.playing {
-        border-left: 4px solid #1DB954;
+    /* Select box */
+    .stSelectbox {
+        background-color: #282828 !important;
+        color: white !important;
+    }
+    
+    /* Buttons */
+    .stButton button {
+        background-color: #1DB954 !important;
+        color: white !important;
+        border: none !important;
+        padding: 10px 20px !important;
+        border-radius: 5px !important;
+        cursor: pointer !important;
+    }
+    
+    .stButton button:hover {
+        background-color: #1ed760 !important;
     }
 </style>
 """, unsafe_allow_html=True)
-
-# Initialize session state
-if 'current_index' not in st.session_state:
-    st.session_state.current_index = 0
-if 'is_playing' not in st.session_state:
-    st.session_state.is_playing = False
-if 'shuffle_on' not in st.session_state:
-    st.session_state.shuffle_on = False
-if 'repeat_on' not in st.session_state:
-    st.session_state.repeat_on = False
-if 'auto_play' not in st.session_state:
-    st.session_state.auto_play = True
-if 'last_played' not in st.session_state:
-    st.session_state.last_played = None
 
 def save_uploaded_file(uploaded_file):
     """Save uploaded file to directory and return the file path"""
@@ -124,49 +99,6 @@ def format_filename(filepath):
     """Format filepath to display name"""
     return Path(filepath).name
 
-def play_next():
-    """Play next song based on current playback mode"""
-    audio_files = get_saved_audio_files()
-    if not audio_files:
-        return
-
-    if st.session_state.shuffle_on:
-        st.session_state.current_index = random.randint(0, len(audio_files) - 1)
-    else:
-        st.session_state.current_index = (st.session_state.current_index + 1) % len(audio_files)
-    
-    st.session_state.is_playing = True
-    st.experimental_rerun()
-
-def play_previous():
-    """Play previous song"""
-    audio_files = get_saved_audio_files()
-    if not audio_files:
-        return
-
-    if st.session_state.shuffle_on:
-        st.session_state.current_index = random.randint(0, len(audio_files) - 1)
-    else:
-        st.session_state.current_index = (st.session_state.current_index - 1) % len(audio_files)
-    
-    st.session_state.is_playing = True
-    st.experimental_rerun()
-
-def toggle_play():
-    """Toggle play/pause state"""
-    st.session_state.is_playing = not st.session_state.is_playing
-    st.experimental_rerun()
-
-def toggle_shuffle():
-    """Toggle shuffle mode"""
-    st.session_state.shuffle_on = not st.session_state.shuffle_on
-    st.experimental_rerun()
-
-def toggle_repeat():
-    """Toggle repeat mode"""
-    st.session_state.repeat_on = not st.session_state.repeat_on
-    st.experimental_rerun()
-
 # App Header
 st.title("🎵 Music Player")
 st.markdown("---")
@@ -186,80 +118,43 @@ if uploaded_files:
         for uploaded_file in uploaded_files:
             save_uploaded_file(uploaded_file)
         st.success(f"Successfully uploaded {len(uploaded_files)} file(s)!")
-        time.sleep(1)
-        st.experimental_rerun()
+        time.sleep(1)  # Give user time to see the success message
+        st.experimental_rerun()  # Refresh to update the playlist
 
 # Player Section
 st.markdown("### Now Playing")
 audio_files = get_saved_audio_files()
 
 if audio_files:
-    # Ensure current_index is valid
-    if st.session_state.current_index >= len(audio_files):
-        st.session_state.current_index = 0
-    
-    current_file = audio_files[st.session_state.current_index]
-    
-    # Create columns for player layout
+    # Create columns for player controls
     col1, col2 = st.columns([3, 1])
     
     with col1:
+        # Song selection
+        selected_file = st.selectbox(
+            "Select a song",
+            audio_files,
+            format_func=format_filename,
+            key="song_select"
+        )
+        
         # Audio player
-        audio_player = st.audio(current_file, format='audio/mp3')
+        st.audio(selected_file, format='audio/mp3')
         
-        # Player controls
-        controls_col1, controls_col2, controls_col3, controls_col4, controls_col5 = st.columns(5)
-        
-        with controls_col1:
-            st.button("⏮️ Previous", on_click=play_previous, key="prev_button")
-        
-        with controls_col2:
-            play_text = "⏸️ Pause" if st.session_state.is_playing else "▶️ Play"
-            st.button(play_text, on_click=toggle_play, key="play_button")
-        
-        with controls_col3:
-            st.button("⏭️ Next", on_click=play_next, key="next_button")
-        
-        with controls_col4:
-            shuffle_text = "🔀 Shuffle (On)" if st.session_state.shuffle_on else "🔀 Shuffle"
-            st.button(shuffle_text, on_click=toggle_shuffle, key="shuffle_button")
-        
-        with controls_col5:
-            repeat_text = "🔁 Repeat (On)" if st.session_state.repeat_on else "🔁 Repeat"
-            st.button(repeat_text, on_click=toggle_repeat, key="repeat_button")
-    
     with col2:
         # Display current song info
         st.markdown("#### Current Track")
-        st.markdown(f"**{format_filename(current_file)}**")
+        st.markdown(f"**{format_filename(selected_file)}**")
         
-        # Display playback mode
-        if st.session_state.shuffle_on:
-            st.markdown("🔀 Shuffle On")
-        if st.session_state.repeat_on:
-            st.markdown("🔁 Repeat On")
-    
     # Playlist section
     st.markdown("### Playlist")
-    for idx, file in enumerate(audio_files):
-        is_current = idx == st.session_state.current_index
-        status = "🎵 " if is_current else "   "
-        if st.button(
-            f"{status}{format_filename(file)}",
-            key=f"playlist_{idx}",
-            help="Click to play"
-        ):
-            st.session_state.current_index = idx
-            st.session_state.is_playing = True
-            st.experimental_rerun()
-
-    # Auto-play next song
-    if st.session_state.last_played != current_file:
-        st.session_state.last_played = current_file
-        if st.session_state.auto_play:
-            time.sleep(0.1)  # Small delay to ensure audio element is loaded
-            play_next()
-
+    for idx, file in enumerate(audio_files, 1):
+        is_playing = file == selected_file
+        status = "🎵 " if is_playing else "   "
+        st.markdown(
+            f"{status}{idx}. {format_filename(file)}",
+            unsafe_allow_html=True
+        )
 else:
     st.warning("No audio files found. Upload some music to get started!")
 
@@ -269,3 +164,7 @@ st.markdown(
     "Made with ❤️ using Streamlit",
     unsafe_allow_html=True
 )
+
+# Add session state to maintain player state
+if 'playing' not in st.session_state:
+    st.session_state.playing = False
