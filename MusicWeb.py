@@ -58,6 +58,17 @@ st.markdown("""
         font-weight: bold;
         margin-top: 10px;
     }
+    .upload-button {
+        background-color: #1DB954;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    .upload-button:hover {
+        background-color: #1ed760;
+    }
 </style>
 """, unsafe_allow_html=True)
 
